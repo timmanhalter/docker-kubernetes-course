@@ -1,0 +1,4 @@
+# node_modules on the host system should be ignored and not copied into the image during build process
+node_modules
+Dockerfile
+.git
