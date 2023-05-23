@@ -1,0 +1,46 @@
+# There are several versions of the Compose file format – 1, 2, 2.x, and 3.x.
+version: '3.8'
+
+services:
+  # The mongo database
+  mongodb:
+    image: 'mongo'
+    container_name: mongodb
+    volumes:
+      - data:/data/db
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=root
+    #   - MONGO_INITDB_ROOT_PASSWORD=secret
+    env_file:
+      - ./env/mongo.env
+  # The backend application
+  backend:
+    build: './backend'
+    container_name: goals-backend
+    env_file:
+      - ./env/backend.env
+    ports:
+      - '8080:80'
+    volumes:
+      - logs:/app/logs
+      - /app/node_modules
+      - ./backend:/app
+    depends_on:
+      - mongodb
+  # The frontend application
+  frontend:
+    build: './frontend'
+    container_name: goals-frontend
+    ports:
+      - '3000:3000'
+    volumes:
+      - /app/node_modules
+      - ./frontend/src:/app/src
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+volumes:
+  data:
+  logs:

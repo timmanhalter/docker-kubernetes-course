@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # serves the application - incoming request hit the server and is forwareded to the php interpreter
+  server:
+    image: 'nginx:stable-alpine'
+    ports: 
+      - '8000:80'
+    volumes: 
+      - ./src:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+      - mysql
+  # php interpreter indirectly communicate with the server container via the php-fpm protocol
+  php:
+    # image
+    build:
+      context: ./dockerfiles
+      dockerfile: php.dockerfile
+    volumes:
+      - ./src:/var/www/html:delegated # delegated: performance
+    ports:
+      # Port 9000 is used by php-fpm (see nginx.conf)
+      - '3000:9000'
+  mysql:
+    image: 'mysql:5.7'
+    env_file:
+      - ./env/mysql.env
+  # utility container - which will then not only be used internally by Laravel, but which most importantly can be used by us
+  composer:
+    build:
+      context: ./dockerfiles
+      dockerfile: composer.dockerfile
+    volumes:
+      - ./src:/var/www/html:delegated
+  # utility container - laravel command line using php
+  artisan:
+    build:
+      context: ./dockerfiles
+      dockerfile: php.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: #["php", "/var/www/html/artisan"]
+      - 'php'
+      - '/var/www/html/artisan'
+  # utility container - npm command line using node
+  npm:
+    image: node:14
+    working_dir: /var/www/html
+    entrypoint: ["npm"]
+    volumes:
+      - ./src:/var/www/html
